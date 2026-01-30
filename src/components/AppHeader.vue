@@ -1,12 +1,30 @@
 <script setup>
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import PButton from './PButton.vue'
+import { authToken } from '@/auth/authToken'
+import { appConfig } from '@/config/appConfig'
+
+const isLoggedIn = authToken.isLoggedIn
 
 const mobileMenuOpen = ref(false)
 
+const router = useRouter()
+const route = useRoute()
+
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
+}
+
+const logout = async () => {
+  authToken.clearToken()
+
+  // In non-public mode, force the login screen after logging out.
+  if (!appConfig.publicEnabled && route.path !== '/login') {
+    await router.push({ path: '/login', query: { next: route.fullPath } })
+  }
+
+  mobileMenuOpen.value = false
 }
 </script>
 
@@ -47,9 +65,13 @@ const toggleMobileMenu = () => {
           >
             GitHub
           </a>
-          <PButton variant="primary" to="/modules">
-            Get Started
+          <PButton v-if="!isLoggedIn" variant="secondary" to="/login">
+            Login
           </PButton>
+          <PButton v-if="isLoggedIn" variant="secondary" @click="logout">
+            Logout
+          </PButton>
+          <PButton variant="primary" to="/modules">Get Started</PButton>
         </div>
 
         <!-- Mobile Menu Button -->
@@ -95,6 +117,12 @@ const toggleMobileMenu = () => {
           </a>
           <PButton variant="primary" to="/modules" @click="toggleMobileMenu">
             Get Started
+          </PButton>
+          <PButton v-if="!isLoggedIn" variant="secondary" to="/login" @click="toggleMobileMenu">
+            Login
+          </PButton>
+          <PButton v-if="isLoggedIn" variant="secondary" @click="logout">
+            Logout
           </PButton>
         </div>
       </div>
