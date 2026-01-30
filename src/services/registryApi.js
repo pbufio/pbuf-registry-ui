@@ -1,15 +1,4 @@
-import axios from 'axios'
-
-// API calls should be proxied through a backend server to avoid exposing the authentication token
-// The proxy server will add the Authorization header before forwarding requests to the actual API
-const API_BASE_URL = '/api'
-
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
+import { apiClient } from './apiClient'
 
 export const registryApi = {
   /**

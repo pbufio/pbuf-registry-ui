@@ -57,9 +57,15 @@ cp .env.example .env
 
 Edit `.env` and configure:
 - `API_BASE_URL` - Backend API endpoint (default: `http://pbuf.cloud`)
-- `API_TOKEN` - Your pbuf.cloud authentication token (required)
+- `API_TOKEN` - Your **raw** pbuf registry token (optional in public mode)
+- `PUBLIC_ENABLED` - Enable public (unauthenticated) browsing + optional token login
 
-**Important:** The `API_TOKEN` is used server-side only by the Vite dev proxy and nginx in production. It is never exposed to the browser.
+**Important:**
+- When `API_TOKEN` is set, it is used server-side only by the Vite dev proxy and nginx in production. It is never exposed to the browser.
+- If the browser sends an `Authorization` header (token login), the proxies **forward it** to the backend. If the browser does not send one, the proxies fall back to `API_TOKEN` (when configured).
+- The UI always uses **Bearer tokens** (`Authorization: Bearer <token>`). Provide `API_TOKEN` as a raw token (without the `Bearer ` prefix).
+
+If `PUBLIC_ENABLED` is set, you can also login via the UI at `/login`, which stores the token in `sessionStorage` and sends it on requests.
 
 4. **Start the development server:**
 ```bash
@@ -111,7 +117,8 @@ The build process:
 docker run -d \
   -p 8080:80 \
   -e API_BASE_URL=http://pbuf.cloud \
-  -e API_TOKEN=your_api_token_here \
+  -e API_TOKEN=your_raw_token_here \
+  -e PUBLIC_ENABLED=true \
   --name pbuf-ui \
   pbuf-registry-ui:latest
 ```
@@ -123,7 +130,13 @@ The application will be available at `http://localhost:8080`.
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `API_BASE_URL` | No | `http://pbuf.cloud` | Backend API endpoint to proxy requests to |
-| `API_TOKEN` | Yes | (empty) | Authentication token for pbuf.cloud API |
+| `API_TOKEN` | No | (empty) | Raw registry token used as `Authorization: Bearer <token>` by the proxy |
+| `PUBLIC_ENABLED` | No | (empty/false) | Enable public browsing + optional token login via UI |
+
+### Public mode + token login
+
+- Set `PUBLIC_ENABLED=true` to allow using the UI without a server-side token.
+- Users can then open `/login` and paste a token; it will be stored in `sessionStorage` for the session.
 
 **Note:** Environment variables are substituted at container startup by the `docker-entrypoint.sh` script using `envsubst`.
 

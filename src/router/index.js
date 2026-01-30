@@ -3,10 +3,16 @@ import HomeView from '@/views/HomeView.vue'
 import ModulesView from '@/views/ModulesView.vue'
 import ModuleDetailView from '@/views/ModuleDetailView.vue'
 import ModuleVersionView from '@/views/ModuleVersionView.vue'
+import LoginView from '@/views/LoginView.vue'
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
+        {
+            path: '/login',
+            name: 'login',
+            component: LoginView
+        },
         {
             path: '/',
             name: 'home',
