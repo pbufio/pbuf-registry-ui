@@ -24,7 +24,9 @@ const runtimeConfigDevPlugin = (env) => {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  
+
+  const publicEnabled = env.PUBLIC_ENABLED ?? env.VITE_PUBLIC_ENABLED ?? ''
+
   return {
     plugins: [runtimeConfigDevPlugin(env), vue()],
     resolve: {
@@ -42,7 +44,8 @@ export default defineConfig(({ mode }) => {
             proxy.on('proxyReq', (proxyReq, req, res) => {
               const headerValue = selectProxyAuthorizationHeader({
                 incomingAuthorization: req.headers?.authorization,
-                apiToken: env.API_TOKEN
+                apiToken: env.API_TOKEN,
+                publicEnabled
               })
 
               if (headerValue) {

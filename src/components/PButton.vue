@@ -21,7 +21,7 @@ const getComponentType = (to, href) => {
     :target="external ? '_blank' : undefined"
     :rel="external ? 'noopener noreferrer' : undefined"
     :class="[
-      'px-5 py-2.5 rounded-lg font-medium transition-all duration-200 active:scale-95 inline-flex items-center justify-center gap-2',
+      'px-5 py-2.5 rounded-lg font-medium cursor-pointer transition-all duration-200 active:scale-95 inline-flex items-center justify-center gap-2',
       variant === 'primary' 
         ? 'bg-brand text-white hover:bg-brand-dark shadow-lg shadow-brand/20' 
         : 'bg-surface-card border border-surface-border text-zinc-300 hover:text-white hover:bg-zinc-800'

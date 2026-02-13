@@ -25,7 +25,7 @@ const copyToClipboard = () => {
       </div>
       <button 
         @click="copyToClipboard" 
-        class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors px-2 py-1 rounded hover:bg-zinc-800"
+        class="text-xs text-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors px-2 py-1 rounded hover:bg-zinc-800"
       >
         {{ copied ? 'Copied!' : 'Copy' }}
       </button>

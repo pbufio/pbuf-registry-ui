@@ -10,10 +10,10 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
     <header class="max-w-4xl mx-auto text-center py-20 px-4">
       <div class="mb-6">
         <h1 class="text-5xl md:text-6xl font-extrabold tracking-tight mb-6">
-          Modern <span class="text-brand">Protobuf</span> Registry
+          Production-Safe <span class="text-brand">Protobuf</span> Registry
         </h1>
         <p class="text-xl md:text-2xl text-zinc-400 mb-8 max-w-2xl mx-auto">
-          Simplify your Protocol Buffers file management with pbuf.io
+          Open-source registry built for SRE-grade safety: catch breaking changes and drift before they hit production.
         </p>
       </div>
       
@@ -36,18 +36,19 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </template>
-          <template #title>Free Forever</template>
-          Open-source registry with no hidden costs for the community.
+          <template #title>Open-Source & Free</template>
+          Modern open-source Protobuf registry built for the community
         </PFeatureCard>
 
         <PFeatureCard>
           <template #icon>
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V7l7-4z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
             </svg>
           </template>
-          <template #title>Cloud Registry</template>
-          Securely push and version your proto files in the cloud.
+          <template #title>Production Safety</template>
+          Detect breaking changes and drift early to prevent backward-incompatible updates from reaching production
         </PFeatureCard>
 
         <PFeatureCard>
@@ -57,7 +58,7 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
             </svg>
           </template>
           <template #title>CLI Tools</template>
-          Powerful CLI for vendoring and managing dependencies.
+          Powerful CLI for vendoring and managing dependencies
         </PFeatureCard>
       </div>
     </section>
@@ -93,7 +94,7 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
     <!-- CTA Section -->
     <section class="max-w-4xl mx-auto px-4 py-20 text-center">
       <h2 class="text-3xl font-bold mb-4 tracking-tight">Ready to get started?</h2>
-      <p class="text-zinc-400 mb-8 text-lg">Join developers worldwide using pbuf.io for their protobuf registry needs.</p>
+      <p class="text-zinc-400 mb-8 text-lg">Ship protobuf changes with confidence — protect production with open-source tooling.</p>
       <PButton to="/modules">Explore Modules</PButton>
     </section>
   </div>

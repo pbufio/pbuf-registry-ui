@@ -282,10 +282,10 @@ modules:
             <button
               @click="activeTab = 'files'"
               :class="[
-                'pb-3 px-1 font-medium transition-colors',
+                'pb-3 px-1 font-medium transition-colors cursor-pointer',
                 activeTab === 'files' 
                   ? 'text-brand border-b-2 border-brand' 
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  : 'text-zinc-400 hover:text-zinc-200'
               ]"
             >
               Proto Files ({{ protoFiles.length }})
@@ -293,10 +293,10 @@ modules:
             <button
               @click="activeTab = 'dependencies'"
               :class="[
-                'pb-3 px-1 font-medium transition-colors',
+                'pb-3 px-1 font-medium transition-colors cursor-pointer',
                 activeTab === 'dependencies' 
                   ? 'text-brand border-b-2 border-brand' 
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  : 'text-zinc-400 hover:text-zinc-200'
               ]"
             >
               Dependencies ({{ dependencies.length }})
@@ -304,10 +304,10 @@ modules:
             <button
               @click="activeTab = 'metadata'"
               :class="[
-                'pb-3 px-1 font-medium transition-colors',
+                'pb-3 px-1 font-medium transition-colors cursor-pointer',
                 activeTab === 'metadata' 
                   ? 'text-brand border-b-2 border-brand' 
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  : 'text-zinc-400 hover:text-zinc-200'
               ]"
             >
               Metadata
@@ -315,10 +315,10 @@ modules:
             <button
               @click="activeTab = 'drift'"
               :class="[
-                'pb-3 px-1 font-medium transition-colors',
+                'pb-3 px-1 font-medium transition-colors cursor-pointer',
                 activeTab === 'drift'
                   ? 'text-brand border-b-2 border-brand'
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  : 'text-zinc-400 hover:text-zinc-200'
               ]"
             >
               Drift ({{ driftEvents.length }})
