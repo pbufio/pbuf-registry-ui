@@ -1,15 +1,15 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import PCard from '@/components/PCard.vue'
 import PBadge from '@/components/PBadge.vue'
 import PButton from '@/components/PButton.vue'
 import PCodeBlock from '@/components/PCodeBlock.vue'
 import { registryApi } from '@/services/registryApi'
 import { metadataApi } from '@/services/metadataApi'
+import { driftApi } from '@/services/driftApi'
 
 const route = useRoute()
-const router = useRouter()
 const protoFiles = ref([])
 const dependencies = ref([])
 const metadata = ref(null)
@@ -20,11 +20,125 @@ const activeTab = ref('files')
 const error = ref(null)
 const protoFilesError = ref(null)
 
+const driftEvents = ref([])
+const driftLoading = ref(false)
+const driftLoaded = ref(false)
+const driftError = ref(null)
+
 const moduleName = computed(() => {
   const name = route.params.name
   return Array.isArray(name) ? name.join('/') : name
 })
 const tag = computed(() => route.params.tag)
+
+watch([moduleName, tag], () => {
+  // Reset state when navigating between tags without recreating the component
+  protoFiles.value = []
+  dependencies.value = []
+  metadata.value = null
+  error.value = null
+  protoFilesError.value = null
+
+  protoFilesLoaded.value = false
+  driftLoaded.value = false
+  driftEvents.value = []
+  driftError.value = null
+
+  activeTab.value = 'files'
+
+  loadVersionDetails()
+  loadProtoFiles()
+  loadDriftEvents()
+})
+
+const driftSummary = computed(() => {
+  const events = driftEvents.value || []
+  const total = events.length
+  if (total === 0) return null
+
+  const byType = {
+    added: 0,
+    modified: 0,
+    deleted: 0,
+    other: 0
+  }
+
+  const filenames = new Set()
+  let unacknowledged = 0
+
+  for (const e of events) {
+    if (e?.filename) filenames.add(e.filename)
+    if (!e?.acknowledged) unacknowledged += 1
+
+    switch (e?.eventType) {
+      case 'DRIFT_EVENT_TYPE_ADDED':
+        byType.added += 1
+        break
+      case 'DRIFT_EVENT_TYPE_MODIFIED':
+        byType.modified += 1
+        break
+      case 'DRIFT_EVENT_TYPE_DELETED':
+        byType.deleted += 1
+        break
+      default:
+        byType.other += 1
+    }
+  }
+
+  return {
+    total,
+    filesChanged: filenames.size,
+    unacknowledged,
+    byType
+  }
+})
+
+const overallSeverity = computed(() => {
+  const severityRank = {
+    DRIFT_SEVERITY_UNSPECIFIED: 0,
+    DRIFT_SEVERITY_INFO: 1,
+    DRIFT_SEVERITY_WARNING: 2,
+    DRIFT_SEVERITY_CRITICAL: 3
+  }
+
+  let max = 'DRIFT_SEVERITY_UNSPECIFIED'
+  for (const e of driftEvents.value || []) {
+    const s = e?.severity || 'DRIFT_SEVERITY_UNSPECIFIED'
+    if ((severityRank[s] ?? 0) > (severityRank[max] ?? 0)) {
+      max = s
+    }
+  }
+  return max
+})
+
+const overallSeverityLabel = computed(() => {
+  return (overallSeverity.value || 'DRIFT_SEVERITY_UNSPECIFIED').replace('DRIFT_SEVERITY_', '')
+})
+
+const overallSeverityVariant = computed(() => {
+  switch (overallSeverity.value) {
+    case 'DRIFT_SEVERITY_INFO':
+      return 'info'
+    case 'DRIFT_SEVERITY_WARNING':
+      return 'warning'
+    case 'DRIFT_SEVERITY_CRITICAL':
+      return 'critical'
+    default:
+      return 'default'
+  }
+})
+
+const formatEventType = (eventType) => {
+  if (!eventType) return 'UNSPECIFIED'
+  return eventType.replace('DRIFT_EVENT_TYPE_', '')
+}
+
+const formatDateTime = (value) => {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return value
+  return d.toLocaleString()
+}
 
 const loadVersionDetails = async () => {
   loading.value = true
@@ -63,16 +177,42 @@ const loadProtoFiles = async () => {
   }
 }
 
+const loadDriftEvents = async () => {
+  if (driftLoaded.value) return
+
+  driftLoading.value = true
+  driftError.value = null
+  try {
+    const response = await driftApi.getModuleDriftEvents(moduleName.value, tag.value)
+    driftEvents.value = response.events || []
+    driftLoaded.value = true
+  } catch (err) {
+    console.error('Failed to load drift events:', err)
+    driftError.value = err.response?.data?.message || err.message || 'Failed to load drift events'
+  } finally {
+    driftLoading.value = false
+  }
+}
+
+const retryLoadDriftEvents = async () => {
+  driftLoaded.value = false
+  await loadDriftEvents()
+}
+
 // Watch activeTab and load proto files when Files tab is clicked
 watch(activeTab, (newTab) => {
   if (newTab === 'files' && !protoFilesLoaded.value) {
     loadProtoFiles()
+  }
+  if (newTab === 'drift' && !driftLoaded.value) {
+    loadDriftEvents()
   }
 })
 
 onMounted(() => {
   loadVersionDetails()
   loadProtoFiles()
+  loadDriftEvents()
 })
 </script>
 
@@ -171,6 +311,17 @@ modules:
               ]"
             >
               Metadata
+            </button>
+            <button
+              @click="activeTab = 'drift'"
+              :class="[
+                'pb-3 px-1 font-medium transition-colors',
+                activeTab === 'drift'
+                  ? 'text-brand border-b-2 border-brand'
+                  : 'text-zinc-400 hover:text-zinc-300'
+              ]"
+            >
+              Drift ({{ driftEvents.length }})
             </button>
           </div>
         </div>
@@ -276,6 +427,76 @@ modules:
             </PCard>
           </div>
           <p v-else class="text-zinc-400 text-center py-8">No metadata available.</p>
+        </div>
+
+        <!-- Drift Tab -->
+        <div v-if="activeTab === 'drift'" class="space-y-4">
+          <div v-if="driftLoading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
+            <p class="text-zinc-400 mt-4">Loading drift events...</p>
+          </div>
+          <div v-else-if="driftError" class="text-center py-12">
+            <PCard>
+              <div class="mb-4">
+                <svg class="w-12 h-12 text-red-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-zinc-300 font-semibold mb-2">Failed to Load Drift Events</p>
+                <p class="text-zinc-400 text-sm">{{ driftError }}</p>
+              </div>
+              <PButton variant="primary" @click="retryLoadDriftEvents">
+                Retry
+              </PButton>
+            </PCard>
+          </div>
+          <template v-else>
+            <PCard>
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <h3 class="text-lg font-semibold mb-1">What changed in {{ tag }}</h3>
+                  <p v-if="driftSummary" class="text-zinc-400 text-sm">
+                    {{ driftSummary.filesChanged }} file(s) affected •
+                    {{ driftSummary.byType.added }} added, {{ driftSummary.byType.modified }} modified, {{ driftSummary.byType.deleted }} deleted
+                    <span v-if="driftSummary.unacknowledged"> • {{ driftSummary.unacknowledged }} unacknowledged</span>
+                  </p>
+                  <p v-else class="text-zinc-400 text-sm">No drift events detected for this tag.</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-zinc-500 mb-1">Severity</p>
+                  <PBadge :variant="overallSeverityVariant">{{ overallSeverityLabel }}</PBadge>
+                </div>
+              </div>
+            </PCard>
+
+            <div v-if="driftEvents.length > 0" class="space-y-3">
+              <PCard v-for="event in driftEvents" :key="event.id">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="min-w-0">
+                    <p class="font-mono text-zinc-100 truncate">{{ event.filename }}</p>
+                    <p class="text-sm text-zinc-400 mt-1">
+                      {{ formatEventType(event.eventType) }} • Detected {{ formatDateTime(event.detectedAt) }}
+                    </p>
+                    <p class="text-xs text-zinc-500 mt-1" v-if="event.previousHash || event.currentHash">
+                      <span v-if="event.previousHash">prev: {{ event.previousHash }}</span>
+                      <span v-if="event.previousHash && event.currentHash"> • </span>
+                      <span v-if="event.currentHash">curr: {{ event.currentHash }}</span>
+                    </p>
+                  </div>
+                  <div class="flex flex-col items-end gap-2">
+                    <PBadge :variant="event.severity === 'DRIFT_SEVERITY_INFO' ? 'info' : event.severity === 'DRIFT_SEVERITY_WARNING' ? 'warning' : event.severity === 'DRIFT_SEVERITY_CRITICAL' ? 'critical' : 'default'">
+                      {{ (event.severity || 'DRIFT_SEVERITY_UNSPECIFIED').replace('DRIFT_SEVERITY_', '') }}
+                    </PBadge>
+                    <PBadge :variant="event.acknowledged ? 'default' : 'brand'">
+                      {{ event.acknowledged ? 'ACKNOWLEDGED' : 'UNACKNOWLEDGED' }}
+                    </PBadge>
+                  </div>
+                </div>
+                <div v-if="event.acknowledged" class="mt-3 text-xs text-zinc-500">
+                  Acknowledged {{ formatDateTime(event.acknowledgedAt) }}<span v-if="event.acknowledgedBy"> by {{ event.acknowledgedBy }}</span>
+                </div>
+              </PCard>
+            </div>
+          </template>
         </div>
       </div>
     </div>
