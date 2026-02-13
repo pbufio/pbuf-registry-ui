@@ -1,6 +1,10 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
+import {
+  buildBearerValue,
+} from '../src/utils/proxyAuthUtils.js'
+
 import { selectProxyAuthorizationHeader } from '../src/utils/proxyAuthUtils.js'
 
 test('selectProxyAuthorizationHeader: prefers incoming Authorization header', () => {
@@ -32,3 +36,35 @@ test('selectProxyAuthorizationHeader: does not fall back to API token in private
 
   assert.equal(result, '')
 })
+
+assert.equal(buildBearerValue(''), '')
+assert.equal(buildBearerValue('   '), '')
+assert.equal(buildBearerValue('pbuf_user_abc'), 'Bearer pbuf_user_abc')
+assert.equal(buildBearerValue('Bearer pbuf_user_abc'), 'Bearer pbuf_user_abc')
+
+assert.equal(
+    selectProxyAuthorizationHeader({
+      incomingAuthorization: 'Bearer from-client',
+      apiToken: 'pbuf_user_env',
+      publicEnabled: false
+    }),
+    'Bearer from-client'
+)
+assert.equal(
+    selectProxyAuthorizationHeader({
+      incomingAuthorization: '',
+      apiToken: 'pbuf_user_env',
+      publicEnabled: true
+    }),
+    'Bearer pbuf_user_env'
+)
+assert.equal(
+    selectProxyAuthorizationHeader({
+      incomingAuthorization: undefined,
+      apiToken: '',
+      publicEnabled: true
+    }),
+    ''
+)
+
+console.log('proxyAuthUtils: OK')
