@@ -22,7 +22,7 @@ echo "  API_TOKEN: ${API_TOKEN:+***set***}"
 echo "  PUBLIC_ENABLED: ${PUBLIC_ENABLED:+***set***}"
 
 # Create a temporary nginx config with environment variables substituted
-envsubst '$API_BASE_URL $API_TOKEN' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+envsubst '$API_BASE_URL $API_TOKEN $PUBLIC_ENABLED' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 
 # Generate runtime app config for the browser
 if [ -f /usr/share/nginx/html/config.template.js ]; then

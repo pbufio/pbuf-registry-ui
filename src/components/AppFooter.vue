@@ -29,18 +29,13 @@ import { RouterLink } from 'vue-router'
               </RouterLink>
             </li>
             <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                Documentation
-              </a>
-            </li>
-            <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                API Reference
-              </a>
-            </li>
-            <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                CLI Guide
+              <a
+                href="https://github.com/pbufio/pbuf-cli"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-zinc-400 hover:text-brand transition-colors text-sm"
+              >
+                CLI Docs
               </a>
             </li>
           </ul>
@@ -51,23 +46,23 @@ import { RouterLink } from 'vue-router'
           <h3 class="text-zinc-50 font-semibold mb-4">Community</h3>
           <ul class="space-y-2">
             <li>
-              <a href="https://github.com" target="_blank" class="text-zinc-400 hover:text-brand transition-colors text-sm">
+              <a
+                href="https://github.com/pbufio"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-zinc-400 hover:text-brand transition-colors text-sm"
+              >
                 GitHub
               </a>
             </li>
             <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                Discord
+              <a href="https://x.com/pbufio" target="_blank" rel="noopener noreferrer" class="text-zinc-400 hover:text-brand transition-colors text-sm">
+                X (Twitter)
               </a>
             </li>
             <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                Twitter
-              </a>
-            </li>
-            <li>
-              <a href="#" class="text-zinc-400 hover:text-brand transition-colors text-sm">
-                Blog
+              <a href="mailto:hello@pbuf.io" class="text-zinc-400 hover:text-brand transition-colors text-sm">
+                Email
               </a>
             </li>
           </ul>
@@ -80,11 +75,11 @@ import { RouterLink } from 'vue-router'
           © {{ new Date().getFullYear() }} pbuf.io. All rights reserved.
         </p>
         <div class="flex gap-6">
-          <a href="#" class="text-zinc-500 hover:text-brand transition-colors text-sm">
-            Privacy Policy
+          <a href="https://x.com/pbufio" target="_blank" rel="noopener noreferrer" class="text-zinc-500 hover:text-brand transition-colors text-sm">
+            X
           </a>
-          <a href="#" class="text-zinc-500 hover:text-brand transition-colors text-sm">
-            Terms of Service
+          <a href="mailto:hello@pbuf.io" class="text-zinc-500 hover:text-brand transition-colors text-sm">
+            hello@pbuf.io
           </a>
         </div>
       </div>

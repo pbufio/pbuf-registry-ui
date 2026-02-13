@@ -77,7 +77,7 @@ const logout = async () => {
         <!-- Mobile Menu Button -->
         <button 
           @click="toggleMobileMenu"
-          class="md:hidden text-zinc-300 hover:text-zinc-50 p-2"
+          class="md:hidden text-zinc-300 hover:text-zinc-50 p-2 rounded-lg cursor-pointer hover:bg-zinc-800/50 transition-colors"
         >
           <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
