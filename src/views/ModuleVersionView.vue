@@ -24,6 +24,8 @@ const driftEvents = ref([])
 const driftLoading = ref(false)
 const driftLoaded = ref(false)
 const driftError = ref(null)
+const dependencyDriftStatuses = ref([])
+const dependencyDriftError = ref(null)
 
 const moduleName = computed(() => {
   const name = route.params.name
@@ -43,6 +45,8 @@ watch([moduleName, tag], () => {
   driftLoaded.value = false
   driftEvents.value = []
   driftError.value = null
+  dependencyDriftStatuses.value = []
+  dependencyDriftError.value = null
 
   activeTab.value = 'files'
 
@@ -50,6 +54,13 @@ watch([moduleName, tag], () => {
   loadProtoFiles()
   loadDriftEvents()
 })
+
+const severityRank = {
+  DRIFT_SEVERITY_UNSPECIFIED: 0,
+  DRIFT_SEVERITY_INFO: 1,
+  DRIFT_SEVERITY_WARNING: 2,
+  DRIFT_SEVERITY_CRITICAL: 3
+}
 
 const driftSummary = computed(() => {
   const events = driftEvents.value || []
@@ -94,13 +105,6 @@ const driftSummary = computed(() => {
 })
 
 const overallSeverity = computed(() => {
-  const severityRank = {
-    DRIFT_SEVERITY_UNSPECIFIED: 0,
-    DRIFT_SEVERITY_INFO: 1,
-    DRIFT_SEVERITY_WARNING: 2,
-    DRIFT_SEVERITY_CRITICAL: 3
-  }
-
   let max = 'DRIFT_SEVERITY_UNSPECIFIED'
   for (const e of driftEvents.value || []) {
     const s = e?.severity || 'DRIFT_SEVERITY_UNSPECIFIED'
@@ -112,11 +116,11 @@ const overallSeverity = computed(() => {
 })
 
 const overallSeverityLabel = computed(() => {
-  return (overallSeverity.value || 'DRIFT_SEVERITY_UNSPECIFIED').replace('DRIFT_SEVERITY_', '')
+  return formatEnumLabel(overallSeverity.value, 'DRIFT_SEVERITY_')
 })
 
-const overallSeverityVariant = computed(() => {
-  switch (overallSeverity.value) {
+const severityToVariant = (severity) => {
+  switch (severity) {
     case 'DRIFT_SEVERITY_INFO':
       return 'info'
     case 'DRIFT_SEVERITY_WARNING':
@@ -126,12 +130,99 @@ const overallSeverityVariant = computed(() => {
     default:
       return 'default'
   }
+}
+
+const recommendationToVariant = (recommendation) => {
+  switch (recommendation) {
+    case 'DEPENDENCY_DRIFT_RECOMMENDATION_ALERT_REVIEW':
+      return 'warning'
+    case 'DEPENDENCY_DRIFT_RECOMMENDATION_SUGGEST_UPDATE':
+      return 'info'
+    default:
+      return 'default'
+  }
+}
+
+const overallSeverityVariant = computed(() => {
+  return severityToVariant(overallSeverity.value)
 })
+
+const formatEnumLabel = (value, prefix) => {
+  if (!value) return 'UNSPECIFIED'
+  return value.replace(prefix, '').replaceAll('_', ' ')
+}
 
 const formatEventType = (eventType) => {
   if (!eventType) return 'UNSPECIFIED'
   return eventType.replace('DRIFT_EVENT_TYPE_', '')
 }
+
+const dependencyDriftByKey = computed(() => {
+  const map = new Map()
+  for (const status of dependencyDriftStatuses.value || []) {
+    if (!status?.dependencyName) continue
+    const key = `${status.dependencyName}@${status.currentTag || ''}`
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(status)
+  }
+  return map
+})
+
+const dependenciesWithDrift = computed(() => {
+  return (dependencies.value || []).map((dep) => {
+    const exactKey = `${dep.name}@${dep.tag || ''}`
+    const fallbackKey = `${dep.name}@`
+    const statuses = dependencyDriftByKey.value.get(exactKey)
+      || dependencyDriftByKey.value.get(fallbackKey)
+      || []
+
+    let highestSeverity = 'DRIFT_SEVERITY_UNSPECIFIED'
+    for (const status of statuses) {
+      const severity = status?.severity || 'DRIFT_SEVERITY_UNSPECIFIED'
+      if ((severityRank[severity] ?? 0) > (severityRank[highestSeverity] ?? 0)) {
+        highestSeverity = severity
+      }
+    }
+
+    return {
+      ...dep,
+      driftStatuses: statuses,
+      driftHighestSeverity: highestSeverity
+    }
+  })
+})
+
+const dependenciesTabDriftBadge = computed(() => {
+  if (dependencyDriftError.value) {
+    return null
+  }
+
+  let hasAlerts = false
+  let hasRecommendations = false
+  for (const status of dependencyDriftStatuses.value || []) {
+    const severity = status?.severity || 'DRIFT_SEVERITY_UNSPECIFIED'
+    const recommendation = status?.recommendation || 'DEPENDENCY_DRIFT_RECOMMENDATION_UNSPECIFIED'
+
+    if (
+      severity === 'DRIFT_SEVERITY_WARNING'
+      || severity === 'DRIFT_SEVERITY_CRITICAL'
+      || recommendation === 'DEPENDENCY_DRIFT_RECOMMENDATION_ALERT_REVIEW'
+    ) {
+      hasAlerts = true
+    }
+
+    if (
+      recommendation === 'DEPENDENCY_DRIFT_RECOMMENDATION_ALERT_REVIEW'
+      || recommendation === 'DEPENDENCY_DRIFT_RECOMMENDATION_SUGGEST_UPDATE'
+    ) {
+      hasRecommendations = true
+    }
+  }
+
+  if (hasAlerts) return { label: 'ALERT', variant: 'critical' }
+  if (hasRecommendations) return { label: 'NEW', variant: 'info' }
+  return null
+})
 
 const formatDateTime = (value) => {
   if (!value) return '—'
@@ -143,6 +234,8 @@ const formatDateTime = (value) => {
 const loadVersionDetails = async () => {
   loading.value = true
   error.value = null
+  dependencyDriftStatuses.value = []
+  dependencyDriftError.value = null
   try {
     // Get metadata (parsed proto structure) - Level 3
     const metadataResponse = await metadataApi.getMetadata(moduleName.value, tag.value)
@@ -151,6 +244,15 @@ const loadVersionDetails = async () => {
     // Get dependencies
     const depsResponse = await registryApi.getModuleDependencies(moduleName.value, tag.value)
     dependencies.value = depsResponse.dependencies || []
+
+    try {
+      const driftStatusResponse = await driftApi.getModuleDependencyDriftStatus(moduleName.value, tag.value)
+      dependencyDriftStatuses.value = driftStatusResponse.statuses || []
+    } catch (err) {
+      console.error('Failed to load dependency drift status:', err)
+      dependencyDriftStatuses.value = []
+      dependencyDriftError.value = err.response?.data?.message || err.message || 'Failed to load dependency drift status'
+    }
   } catch (err) {
     console.error('Failed to load version details:', err)
     error.value = err.response?.data?.message || err.message || 'Failed to load version details'
@@ -299,7 +401,10 @@ modules:
                   : 'text-zinc-400 hover:text-zinc-200'
               ]"
             >
-              Dependencies ({{ dependencies.length }})
+              <span class="inline-flex items-center gap-2">
+                <span>Dependencies ({{ dependencies.length }})</span>
+                <PBadge v-if="dependenciesTabDriftBadge" :variant="dependenciesTabDriftBadge.variant">{{ dependenciesTabDriftBadge.label }}</PBadge>
+              </span>
             </button>
             <button
               @click="activeTab = 'metadata'"
@@ -360,15 +465,44 @@ modules:
         <!-- Dependencies Tab -->
         <div v-if="activeTab === 'dependencies'" class="space-y-4">
           <PCard v-if="dependencies.length > 0">
+            <p v-if="dependencyDriftError" class="text-sm text-amber-300 mb-4">
+              Drift status unavailable: {{ dependencyDriftError }}
+            </p>
             <div class="space-y-3">
               <div
-                v-for="dep in dependencies"
+                v-for="dep in dependenciesWithDrift"
                 :key="`${dep.name}@${dep.tag}`"
-                class="flex items-center justify-between p-4 bg-surface-base rounded-lg"
+                class="flex items-start justify-between gap-4 p-4 bg-surface-base rounded-lg"
               >
-                <div class="flex items-center gap-3">
-                  <span class="font-mono text-zinc-200">{{ dep.name }}</span>
-                  <PBadge variant="brand">{{ dep.tag }}</PBadge>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-3 flex-wrap">
+                    <span class="font-mono text-zinc-200">{{ dep.name }}</span>
+                    <PBadge variant="brand">{{ dep.tag }}</PBadge>
+                    <PBadge :variant="severityToVariant(dep.driftHighestSeverity)">
+                      {{ formatEnumLabel(dep.driftHighestSeverity, 'DRIFT_SEVERITY_') }}
+                    </PBadge>
+                  </div>
+                  <div v-if="dep.driftStatuses.length > 0" class="mt-2 space-y-1">
+                    <p class="text-xs text-zinc-400">
+                      {{ dep.driftStatuses.length }} drift event candidate(s) on newer dependency tags
+                    </p>
+                    <div
+                      v-for="status in dep.driftStatuses"
+                      :key="`${status.dependencyName}:${status.currentTag}:${status.targetTag}`"
+                      class="flex items-center gap-2 flex-wrap text-xs"
+                    >
+                      <span class="text-zinc-500">→ {{ status.targetTag }}</span>
+                      <PBadge :variant="severityToVariant(status.severity)">
+                        {{ formatEnumLabel(status.severity, 'DRIFT_SEVERITY_') }}
+                      </PBadge>
+                      <PBadge :variant="recommendationToVariant(status.recommendation)">
+                        {{ formatEnumLabel(status.recommendation, 'DEPENDENCY_DRIFT_RECOMMENDATION_') }}
+                      </PBadge>
+                    </div>
+                  </div>
+                  <p v-else class="text-xs text-zinc-500 mt-2">
+                    No dependency drift events on newer dependency tags.
+                  </p>
                 </div>
                 <PButton variant="secondary" @click="$router.push(`/modules/${dep.name}`)">
                   View Module →
@@ -483,8 +617,8 @@ modules:
                     </p>
                   </div>
                   <div class="flex flex-col items-end gap-2">
-                    <PBadge :variant="event.severity === 'DRIFT_SEVERITY_INFO' ? 'info' : event.severity === 'DRIFT_SEVERITY_WARNING' ? 'warning' : event.severity === 'DRIFT_SEVERITY_CRITICAL' ? 'critical' : 'default'">
-                      {{ (event.severity || 'DRIFT_SEVERITY_UNSPECIFIED').replace('DRIFT_SEVERITY_', '') }}
+                    <PBadge :variant="severityToVariant(event.severity)">
+                      {{ formatEnumLabel(event.severity, 'DRIFT_SEVERITY_') }}
                     </PBadge>
                     <PBadge :variant="event.acknowledged ? 'default' : 'brand'">
                       {{ event.acknowledged ? 'ACKNOWLEDGED' : 'UNACKNOWLEDGED' }}
