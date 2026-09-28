@@ -23,7 +23,7 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
       </div>
 
       <div class="max-w-2xl mx-auto">
-        <PCodeBlock code="pbuf-cli init my-service" />
+        <PCodeBlock code="pbuf init my-service" />
       </div>
     </header>
 
@@ -81,12 +81,12 @@ import PFeatureCard from '@/components/PFeatureCard.vue'
 
         <div>
           <h3 class="text-xl font-semibold mb-3 text-zinc-200">2. Initialize Your Project</h3>
-          <PCodeBlock code="pbuf-cli init my-service" />
+          <PCodeBlock code="pbuf init my-service" />
         </div>
 
         <div>
           <h3 class="text-xl font-semibold mb-3 text-zinc-200">3. Push Your Protos</h3>
-          <PCodeBlock code="pbuf-cli modules push v1.0.0" />
+          <PCodeBlock code="pbuf modules push v1.0.0" />
         </div>
       </div>
     </section>

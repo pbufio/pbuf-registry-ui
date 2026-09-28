@@ -369,7 +369,7 @@ modules:
     out: third_party
 
 # Then run:
-# pbuf-cli vendor`" />
+# pbuf vendor`" />
           <p class="text-zinc-400 text-sm mt-2">
             Learn more: 
             <a href="https://github.com/pbufio/pbuf-cli" target="_blank" rel="noopener noreferrer" class="text-brand hover:underline">
