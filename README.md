@@ -1,3 +1,12 @@
+> [!IMPORTANT]
+> **This repository has been archived and consolidated into the [`pbufio/pbuf-registry`](https://github.com/pbufio/pbuf-registry) monorepo.**
+>
+> - **Source code**: [`ui/`](https://github.com/pbufio/pbuf-registry/tree/main/ui)
+> - **Documentation**: [`ui/README.md`](https://github.com/pbufio/pbuf-registry/blob/main/ui/README.md)
+> - **Docker Image**: `ghcr.io/pbufio/pbuf-registry-ui:latest`
+
+---
+
 # pbuf.io Registry UI
 
 A modern, developer-first web interface for the pbuf.io Protocol Buffers registry. Built with Vue.js 3, Vite, and Tailwind CSS.
